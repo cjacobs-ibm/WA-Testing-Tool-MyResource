@@ -21,6 +21,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import json
 from argparse import ArgumentParser
 from sklearn.metrics import confusion_matrix
 from __init__ import UTF_8
@@ -32,11 +33,19 @@ def cell_to_str(x):
     return str(x)
 
 def func(args):
+    # Load the mapping JSON
+    with open('./actions.json', 'r') as json_file:
+        intent_mapping = json.load(json_file)
+    
     in_df = pd.read_csv(args.in_file, quoting=csv.QUOTE_ALL,
                         encoding=UTF_8, keep_default_na=False)
     # Look for target columns
     if args.test_column not in in_df or args.golden_column not in in_df:
         raise ValueError('Missing required columns')
+    
+     # Replace `golden intent` with `action title`
+    in_df[args.golden_column] = in_df[args.golden_column].map(intent_mapping).fillna(in_df[args.golden_column])  # Default to original value if no mapping
+    in_df[args.test_column] = in_df[args.test_column].map(intent_mapping).fillna(in_df[args.test_column])
 
     labels = in_df[args.golden_column].drop_duplicates().sort_values()
 
